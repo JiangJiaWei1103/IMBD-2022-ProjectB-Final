@@ -1,0 +1,31 @@
+# Cache
+__pycache__
+.ipynb_checkpoints/
+wandb/
+*.swp
+.mypy_cache
+artifacts/
+fs_tmp/
+tuning_tmp/
+
+# Legacy code
+legacy/
+
+# Local cfg
+config/dp.yaml
+config/model/*
+!config/model/*template.yaml
+
+# Data
+data/raw/*
+data/processed/*
+
+# Local output buffer
+output/
+
+# Submission
+submission.csv
+submissions/
+
+# Local misc
+notes.txt
