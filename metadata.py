@@ -10,4 +10,6 @@ B = {
     "SPIKE_FEAT": ["b", "c", "d"],  # Feature columns of spike
     "TARGET": "MaxWear",  # Target column
     "PROC_LAYERS": 46,  # Number of processing layers
+    "GP1_LEN": 26,  # Number of processing layers in group1
+    "GP2_LEN": 20,  # Number of processing layers in group2
 }
