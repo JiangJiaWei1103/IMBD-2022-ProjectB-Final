@@ -1,0 +1,36 @@
+# LightGBM model hyperparameters
+model_params:
+    # Core
+    task: train
+    objective: regression
+    boosting: gbdt
+    learning_rate: 0.01
+    num_leaves: 31
+    num_threads: -1
+    device: gpu
+    # Learning control
+    max_depth: 6
+    min_data_in_leaf: 20
+    min_sum_hessian_in_leaf: 1
+    bagging_fraction: 0.7
+    bagging_freq: 5
+    feature_fraction: 0.8   # 0.7 seems fine
+#     feature_fraction_bynode:
+    lambda_l1: 2
+    lambda_l2: 7
+    #cat_l2: 10
+    #cat_smooth: 10
+    verbose: 1
+    # Metric
+#     metric:
+
+    # Standard API fit_params
+    n_estimators: 2500
+    verbose_eval: 250
+    early_stopping_round: 500
+#     es_rounds: 500   # Early stopping rounds
+
+    random_state: 42
+
+fit_params:
+    eval_metric: rmse

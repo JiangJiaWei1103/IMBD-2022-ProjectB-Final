@@ -1,0 +1,17 @@
+# Configuration for data processor
+# =Feature selection=
+fs:
+    n_quantiles: 20
+    var_thres: 0.09
+    kbest_score_fn: f
+    kbest_k: 100
+
+# =Special entry handling=
+# Include [`np.inf`, `-np.inf`, `np.nan`]
+imp_spec_entries: True
+
+# =Scaling=
+scale:
+    type: null
+    n_quantiles: null
+    cols: []

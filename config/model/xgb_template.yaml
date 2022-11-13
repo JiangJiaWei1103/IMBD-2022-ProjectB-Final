@@ -1,0 +1,37 @@
+# XGB model hyperparameters
+model_params:
+    # General
+    booster: gbtree
+    verbosity: 1
+    n_jobs: -1
+    # Tree booster
+    n_estimators: 2500
+    max_depth: 6
+#     max_leaves: 0
+#     max_bin: 256
+#     grow_policy: depthwise
+    learning_rate: 0.01  # https://www.quora.com/What-is-the-learning-rate-of-XGBoost
+    tree_method: gpu_hist
+#     gamma: 0
+#     min_child_weight: 1
+#     max_delta_step: 0
+    subsample: 0.7
+#     sampling_method: uniform
+    colsample_bytree: 0.7
+#     colsample_bylevel
+#     colsample_bynode
+    reg_alpha: 0
+    reg_lambda: 1
+#     num_parallel_tree: 1
+#     monotone_constraints
+#     interaction_constraint
+    importance_type: gain
+#     predictor: auto
+    # Learning task
+    objective: 'reg:squarederror'
+    random_state: 42
+
+fit_params:
+    eval_metric: rmse
+    early_stopping_rounds: 500
+    verbose: True

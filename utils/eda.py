@@ -2,7 +2,7 @@
 EDA utilities.
 Author: JiaWei Jiang
 """
-from typing import List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -50,6 +50,40 @@ def summarize(
     display(nan_ratio)
     print("Zero ratio:")
     display(zero_ratio)
+
+
+def plot_pred_and_gt(
+    y: np.ndarray,
+    oof_preds: Union[List[np.ndarray], Dict[str, np.ndarray]],
+    figsize: Tuple[int, int] = (6, 3),
+    legend: bool = False,
+    exp_dump_path: str = "./",
+) -> None:
+    """Plot prediction versus groundtruth.
+
+    To facilitate model comparison, `oof_preds` can contain predictions
+    from different models.
+    """
+    fig, ax = plt.subplots(figsize=figsize)
+    xrange = np.arange(len(y))
+    oof_preds_iter = oof_preds if isinstance(oof_preds, list) else oof_preds.items()
+
+    # Wear cumulation
+    for i, oof_pred in enumerate(oof_preds_iter):
+        if isinstance(oof_pred, tuple):
+            oof_pred_name, oof_pred_val = oof_pred[0], oof_pred[1]
+        else:
+            oof_pred_name, oof_pred_val = i, oof_pred
+        ax.plot(xrange, oof_pred_val, "+-", label=f"Wear Cum Pred {oof_pred_name}")
+    ax.plot(xrange, y, "bo-", label="Wear Cum Gt")
+    ax.set_title("Wear Cumulation (Pred vs Gt)")
+    ax.set_xlabel("Sample ID (Layer)")
+    ax.set_xticks(xrange, xrange + 1)
+    ax.tick_params(axis="x", rotation=45)
+    ax.set_ylabel("Wear Cumulation")
+    if legend:
+        ax.legend()
+    plt.savefig(f"{exp_dump_path}/result.jpg")
 
 
 def plot_univar_dist(

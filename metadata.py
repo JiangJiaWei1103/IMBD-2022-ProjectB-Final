@@ -2,12 +2,17 @@
 Project-specific metadata for global access.
 Author: JiaWei Jiang
 """
-# =Project A=
 # =Project B=
-PK = ["time", "layer"]  # Primary key
-SG_FEAT = ["b", "c", "d", "e", "f", "g", "h", "i"]  # Feature columns of sg
-SPIKE_FEAT = ["b", "c", "d"]  # Feature columns of spike
-TARGET = "MaxWear"  # Target column
-PROC_LAYERS = 46  # Number of processing layers
-GP1_LEN = 26  # Number of processing layers in group1
-GP2_LEN = 20  # Number of processing layers in group2
+# Primary Key
+PK = ["layer"]  # Normal dataset
+PK_AUG = ["layer", "slice"]  # Mixed augmented dataset
+# Features
+SG_FEAT = ["b", "c", "d", "e", "f", "g", "h", "i"]  # SG
+SPIKE_FEAT = ["b", "c", "d"]  # Spike
+# Target
+TARGET = "MaxWear"
+TARGET2 = "MaxWearDiff"  # (Deprecated)
+# Processing Layers
+N_PROC_LAYERS = {"train1": 46, "train2": 24, "test": 25}  # Number of processing layers
+GP1_LEN = {"train1": 26, "train2": 0, "test": 0}  # #Layers in group1
+GP2_LEN = {"train1": 20, "train2": 0, "test": 0}  # #Layers in group2
