@@ -13,6 +13,7 @@ from validation.cross_validate import MultiSeedCVWrapper
 
 warnings.simplefilter("ignore")
 
+# Remove local plotting function when uploaded to IMBD remote
 LOCAL = True
 if LOCAL:
     from utils.eda import plot_pred_and_gt
@@ -73,7 +74,7 @@ def main(args: Namespace) -> None:
 
         if LOCAL:
             plot_pred_and_gt(
-                pd.read_csv("./dara/raw/train1/wear.csv")["MaxWear"].values,
+                pd.read_csv("./data/raw/train1/wear.csv")["MaxWear"].values,
                 oof_preds,
                 figsize=(12, 6),
                 legend=False,
