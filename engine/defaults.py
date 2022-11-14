@@ -74,7 +74,7 @@ class TrainEvalArgParser(BaseArgParser):
         self.argparser.add_argument(
             "--dataset",
             type=str,
-            choices=["train1", "train2", "test"],
+            choices=["train1", "train2", "mix"],
             default=None,
             help="name of the dataset",
         )
