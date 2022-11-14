@@ -1,11 +1,13 @@
 """Utilities for evaluation."""
+import os
 from collections import defaultdict
 from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
 
-from metadata import GP1_LEN, GP2_LEN, N_PROC_LAYERS
+from metadata import GP1_LEN, GP2_LEN, N_PROC_LAYERS, TARGET
+from paths import RAW_DATA_PATH
 
 
 def rmse(y_true: np.ndarray, y_pred: np.ndarray) -> float:
@@ -25,26 +27,23 @@ class Evaluator(object):
         self.dataset = dataset
         self.gp1_len = GP1_LEN[dataset]
         self.gp2_len = GP2_LEN[dataset]
+        self.y = pd.read_csv(os.path.join(RAW_DATA_PATH, dataset, "wear.csv"))[TARGET]
 
         assert (
             N_PROC_LAYERS[dataset] == self.gp1_len + self.gp2_len
         ), "#Processing layers isn't equal to len(gp1) + len(gp2)."
 
-    def evaluate(self, y: np.ndarray, preds: List[np.ndarray]) -> Dict[str, Tuple[float, float]]:
+    def evaluate(self, preds: List[np.ndarray]) -> Dict[str, Tuple[float, float]]:
         """Run evaluation.
 
         Note we can add more eval ranges to do more fine-grained
         evaluation (e.g., fixing layer k).
         """
-        # ===
-        y = pd.read_csv("./data/raw/train1/wear.csv")["MaxWear"].values
-        # ===
-
         final_scores = defaultdict(list)
         for pred in preds:
-            rmse_all = rmse(y, pred)
-            rmse_gp1 = rmse(y[: self.gp1_len], pred[: self.gp1_len])
-            rmse_gp2 = rmse(y[-self.gp2_len :], pred[-self.gp2_len :])
+            rmse_all = rmse(self.y, pred)
+            rmse_gp1 = rmse(self.y[: self.gp1_len], pred[: self.gp1_len])
+            rmse_gp2 = rmse(self.y[-self.gp2_len :], pred[-self.gp2_len :])
 
             final_scores["all"].append(rmse_all)
             final_scores["gp1"].append(rmse_gp1)

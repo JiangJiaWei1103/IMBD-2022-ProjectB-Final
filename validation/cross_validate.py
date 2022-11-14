@@ -99,7 +99,7 @@ class MultiSeedCVWrapper(object):
             if model_name == "lgbm":
                 feat_imps = pd.concat([feat_imps, feat_imps_seed])
 
-        self._log_prf_summary(tr_rmses, val_rmses, evaluator.evaluate(y, oof_preds))
+        self._log_prf_summary(tr_rmses, val_rmses, evaluator.evaluate(oof_preds))
 
         if model_name == "lgbm":
             feat_imps.reset_index(inplace=True)  # Reset `feature` column
@@ -146,7 +146,7 @@ class MultiSeedCVWrapper(object):
 
         # Report peformance summary
         if self.verbose:
-            final_score = evaluator.evaluate(y, [oof_pred])  # Pass single pred in list
+            final_score = evaluator.evaluate([oof_pred])  # Pass single pred in list
             logging.info("=====Performance Summary of Single Seed=====")
             logging.info(f"Train RMSE: {np.mean(tr_rmses):.5f} +- {np.std(tr_rmses):.5f}")
             logging.info(f"Val RMSE: {np.mean(val_rmses):.5f} +- {np.std(val_rmses):.5f}")
