@@ -57,7 +57,7 @@ def plot_pred_and_gt(
     oof_preds: Union[List[np.ndarray], Dict[str, np.ndarray]],
     figsize: Tuple[int, int] = (6, 3),
     legend: bool = False,
-    exp_dump_path: str = "./",
+    dump_path: str = "./result.jpg",
 ) -> None:
     """Plot prediction versus groundtruth.
 
@@ -83,7 +83,7 @@ def plot_pred_and_gt(
     ax.set_ylabel("Wear Cumulation")
     if legend:
         ax.legend()
-    plt.savefig(f"{exp_dump_path}/result.jpg")
+    plt.savefig(dump_path)
 
 
 def plot_univar_dist(

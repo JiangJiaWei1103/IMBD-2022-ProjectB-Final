@@ -150,7 +150,11 @@ class Experiment(object):
         os.mkdir(os.path.join(self.exp_dump_path, "config"))
         os.mkdir(os.path.join(self.exp_dump_path, "models"))
         os.mkdir(os.path.join(self.exp_dump_path, "preds"))
+        for pred_type in ["oof", "holdout", "final"]:
+            os.mkdir(os.path.join(self.exp_dump_path, "preds", pred_type))
         os.mkdir(os.path.join(self.exp_dump_path, "imp"))
+        os.mkdir(os.path.join(self.exp_dump_path, "feats"))
+        os.mkdir(os.path.join(self.exp_dump_path, "media"))
 
     def _run(self) -> None:
         """Start a new experiment entry."""

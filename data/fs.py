@@ -34,7 +34,7 @@ class FeatureSelector(object):
         self.X_shape = X_shape
         self.slc_mask_ = np.ones(X_shape[1])
 
-        self.n_quantiles = n_quantiles
+        self.n_quantiles = X_shape[0] // 2  # n_quantiles
         self.var_thres = var_thres
         self.kbest_score_fn = kbest_score_fn
         self.kbest_k = kbest_k
@@ -47,6 +47,7 @@ class FeatureSelector(object):
         # ===
         X = X.replace(SPECIAL_ENTRIES, 0)
 
+        logging.info(f"Apply QuantileXFormer w/ n_quantiles {self.n_quantiles}...")
         scl = QuantileTransformer(n_quantiles=self.n_quantiles)
         X = pd.DataFrame(scl.fit_transform(X), columns=X.columns)
         # ===
@@ -55,8 +56,7 @@ class FeatureSelector(object):
         if self.kbest_score_fn is not None and self.kbest_k is not None:
             self._kbest(X, y)
 
-        logging.info("-" * 50)
-        logging.info(f"{np.sum(self.slc_mask_)} features are selected.")
+        logging.info(f"==> {np.sum(self.slc_mask_)} features are selected.")
         X_slc = X[self.feats_orig_[self.slc_mask_]]
         self.feats_slc_ = X_slc.columns.to_list()
 

@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler, QuantileTransformer, StandardScaler
 
-from metadata import PK, PK_AUG, TARGET
+from metadata import GP1_LEN, PK, PK_AUG, TARGET
 from paths import DUMP_PATH, PROC_DATA_PATH, RAW_DATA_PATH
 
 from .fs import FeatureSelector
@@ -25,16 +25,20 @@ class DataProcessor:
             {"train1", "train2", "test"}
         data_type: type of the data, the choices are as follows:
             {"normal", "aug"}
+        mix_aug: if True, models are trained on data chunks mixed
+            together
         dp_cfg: hyperparameters of data processor
     """
 
     _df: pd.DataFrame
     _X: pd.DataFrame
+    _y_base: Optional[np.ndarray]
     _y: Optional[np.ndarray]
 
-    def __init__(self, dataset: str, data_type: str, infer: bool, **dp_cfg: Any):
+    def __init__(self, dataset: str, data_type: str, mix_aug: bool, infer: bool, **dp_cfg: Any):
         self.dataset = dataset
         self.data_type = data_type
+        self.mix_aug = mix_aug
         self.infer = infer
 
         # Load X base DataFrame
@@ -43,7 +47,7 @@ class DataProcessor:
         self._df = pd.read_csv(data_path)
 
         # Prepare y data
-        self._y = self._prepare_y()
+        self._y_base = self._prepare_y()
 
         # Setup data processing pipeline
         self._dp_cfg = dp_cfg
@@ -53,7 +57,7 @@ class DataProcessor:
         """Prepare y data."""
         if not self.infer:
             y = pd.read_csv(os.path.join(RAW_DATA_PATH, f"{self.dataset}/wear.csv"))
-            if self.data_type == "aug":
+            if self.mix_aug:
                 y = self._df["layer"].map(y.set_index("Index")[TARGET]).values
             else:
                 y = y[TARGET].values
@@ -73,8 +77,18 @@ class DataProcessor:
         # After data splitting
         self.scale_cfg = self._dp_cfg["scale"]
 
-    def run_before_cv(self, feats_to_use: Optional[List[str]] = None) -> None:
+    def run_before_cv(
+        self, feats_to_use: Optional[List[str]] = None, gp_id: Optional[int] = None, chunk_id: Optional[int] = None
+    ) -> None:
         """Clean and process data before cross validation process.
+
+        Parameters:
+            feats_to_use: pre-selected features
+                *Note: It's used when `self.infer` is True
+            gp_id: group identifier, either 1 or 2
+                *Note: It's used only in chunk-aware modeling
+            chunk_id: chunk (slice) identifier
+                *Note: It's used only in chunk-aware modeling
 
         Return:
             None
@@ -85,16 +99,37 @@ class DataProcessor:
         if self.imp_spec_entries:
             self._df.replace(SPECIAL_ENTRIES, 0, inplace=True)
 
+        # Get pre-chunked data for chunk-aware modeling
+        if gp_id is not None and chunk_id is not None:
+            gp_sep = GP1_LEN[self.dataset]
+            if gp_id == 1:
+                # Group1 data is retrieved
+                gp_mask = self._df["layer"] <= gp_sep
+            elif gp_id == 2:
+                # Group2 data is retrieved
+                gp_mask = self._df["layer"] > gp_sep
+            X = self._df[gp_mask & (self._df["slice"] == chunk_id)]
+            if not self.infer:
+                y = self._y_base[:gp_sep] if gp_id == 1 else self._y_base[gp_sep:]
+        else:
+            X = self._df
+            if not self.infer:
+                y = self._y_base
+
         # Run feature selection
         if not self.infer:
             pk = PK_AUG if self.data_type == "aug" else PK
-            X = self._df.drop(pk, axis=1)
+            X = X.drop(pk, axis=1)
             fs = FeatureSelector(X.shape, **self.fs_cfg)
-            self._X = fs.run(X, self._y)
+            self._X = fs.run(X, y)
             self._feats_slc = fs.feats_slc_
+            self._y = y
         else:
             # No need to drop PK
-            self._X = self._df[feats_to_use]
+            assert feats_to_use is not None, "You must provide pre-selected features in inference process."
+            self._X = X[feats_to_use]
+            self._y = None
+        logging.info(f"X shape: {self._X.shape}, y_shape: {self._y.shape}\n")
 
     def run_after_splitting(
         self,

@@ -51,10 +51,10 @@ class MultiSeedCVWrapper(object):
         if n_folds != -1:
             self.seeds = MultiSeedCVWrapper._gen_seeds(n_seeds)
             if mix_aug:
-                logging.info(f"\nShuffleGroupKFolds with {n_seeds} random seeds are used...\n")
+                logging.info(f"ShuffleGroupKFolds with {n_seeds} random seeds are used...\n")
                 base_kf = ShuffleGroupKFold
             else:
-                logging.info(f"\nNaive KFolds with {n_seeds} random seeds are used...\n")
+                logging.info(f"Naive KFolds with {n_seeds} random seeds are used...\n")
                 base_kf = KFold
 
             self.kfs = [base_kf(n_folds, shuffle=True, random_state=seed) for seed in self.seeds]
@@ -190,12 +190,13 @@ class MultiSeedCVWrapper(object):
         val_rmses_avg = np.array(val_rmses).mean(axis=1).mean()
         val_rmses_std = np.array(val_rmses).mean(axis=1).std()
 
-        logging.info("\n≡≡≡≡≡≡≡ Overall Performance Summary ≡≡≡≡≡≡≡")
+        logging.info("≡≡≡≡≡≡≡ Overall Performance Summary ≡≡≡≡≡≡≡")
         logging.info(f"Train RMSE: {tr_rmses_avg:.5f} ± {tr_rmses_std:.5f}")
         logging.info(f"Val RMSE: {val_rmses_avg:.5f} ± {val_rmses_std:.5f}")
         logging.info("==> Final score <==")
         for eval_range, prf in final_score.items():
             logging.info(f"{eval_range.upper()}: {prf[0]:.5f} ± {prf[1]:.5f}")
+        logging.info("-" * 50)
 
 
 class SingleLayerBlender(object):
