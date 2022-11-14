@@ -229,8 +229,8 @@ class HardKFold(_BaseKFold):
         super().__init__(n_splits=10, shuffle=False, random_state=None)
 
     def split(
-        self, X: pd.DataFrame, groups: Optional[pd.Serie] = None, y: Optional[np.ndarray] = None
-    ) -> Iterator[Tuple[np.ndrray, np.ndarray]]:
+        self, X: pd.DataFrame, groups: Optional[pd.Series] = None, y: Optional[np.ndarray] = None
+    ) -> Iterator[Tuple[np.ndarray, np.ndarray]]:
         MANUAL_SPLIT = [
             [32, 33, 34, 35, 36],
             [31, 30, 29, 28, 37],
