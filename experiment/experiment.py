@@ -28,6 +28,8 @@ class Experiment(object):
 
     Parameters:
         args: arguments driving training and evaluation processes
+        infer: if True, the experiment is for inference only
+        log_file: file to log experiment process
     """
 
     cfg: Dict[str, Dict[str, Any]]
@@ -35,21 +37,27 @@ class Experiment(object):
     fit_params: Dict[str, Any]
     exp_dump_path: str
 
-    def __init__(self, args: Namespace):
+    def __init__(self, args: Namespace, infer: bool = False, log_file: str = "train_eval.log"):
         if args.exp_id is None:
             self.exp_id = gen_exp_id(args.model_name)
         else:
             self.exp_id = args.exp_id
         self.args = args
-        self.dp_cfg = setup_dp()
-        self.model_cfg = setup_model(args.model_name)
+        self.infer = infer
 
-        self._parse_model_cfg()
-        self._agg_cfg()
         self._mkbuf()
 
+        if not infer:
+            # Configure newly created experiment
+            self.dp_cfg = setup_dp()
+            self.model_cfg = setup_model(args.model_name)
+            self._parse_model_cfg()
+            self._agg_cfg()
+        else:
+            self._evoke_cfg()
+
         # Setup experiment logger
-        self.logger = Logger(logging_file=os.path.join(self.exp_dump_path, "exp.log")).get_logger()
+        self.logger = Logger(logging_file=os.path.join(self.exp_dump_path, log_file)).get_logger()
 
     def __enter__(self) -> Experiment:
         self._run()
@@ -120,6 +128,20 @@ class Experiment(object):
         with open(dump_path, "wb") as f:
             pickle.dump(model, f)
 
+    def dump_trafo(self, trafo: Any, tid: str) -> None:
+        """Dump transfomer to corresponding path.
+
+        Parameters:
+            trafo: fitted transformer
+            tid: identifier of the transformer
+
+        Return:
+            None
+        """
+        dump_path = os.path.join(self.exp_dump_path, "trafos", f"{tid}.pkl")
+        with open(dump_path, "wb") as f:
+            pickle.dump(trafo, f)
+
     def _parse_model_cfg(self) -> None:
         """Configure model parameters and parameters passed to `fit`
         method if they're provided.
@@ -139,22 +161,37 @@ class Experiment(object):
             "fit": self.fit_params,
         }
 
+    def _evoke_cfg(self) -> None:
+        """Retrieve configuration of the pre-dumped experiment."""
+        cfg_path = os.path.join(self.exp_dump_path, "config", "cfg.yaml")
+        with open(cfg_path, "r") as f:
+            self.cfg = yaml.full_load(f)
+
     def _mkbuf(self) -> None:
         """Make local buffer for experiment output dumping."""
         if not os.path.exists(DUMP_PATH):
             os.mkdir(DUMP_PATH)
         self.exp_dump_path = os.path.join(DUMP_PATH, self.exp_id)
-        os.mkdir(self.exp_dump_path)
 
-        # Create folders for output objects
-        os.mkdir(os.path.join(self.exp_dump_path, "config"))
-        os.mkdir(os.path.join(self.exp_dump_path, "models"))
-        os.mkdir(os.path.join(self.exp_dump_path, "preds"))
-        for pred_type in ["oof", "holdout", "final"]:
-            os.mkdir(os.path.join(self.exp_dump_path, "preds", pred_type))
-        os.mkdir(os.path.join(self.exp_dump_path, "imp"))
-        os.mkdir(os.path.join(self.exp_dump_path, "feats"))
-        os.mkdir(os.path.join(self.exp_dump_path, "media"))
+        if self.infer:
+            assert os.path.exists(
+                self.exp_dump_path
+            ), "Your specified experiment doesn't have any dumped objects to use."
+        else:
+            os.mkdir(self.exp_dump_path)
+
+            # Create folders for output objects
+            os.mkdir(os.path.join(self.exp_dump_path, "config"))
+            os.mkdir(os.path.join(self.exp_dump_path, "models"))
+            os.mkdir(os.path.join(self.exp_dump_path, "preds"))
+            for pred_type in ["oof", "holdout", "final"]:
+                os.mkdir(os.path.join(self.exp_dump_path, "preds", pred_type))
+            os.mkdir(os.path.join(self.exp_dump_path, "imp"))
+            os.mkdir(os.path.join(self.exp_dump_path, "trafos"))
+            os.mkdir(os.path.join(self.exp_dump_path, "feats"))
+            os.mkdir(os.path.join(self.exp_dump_path, "media"))
+            for pred_type in ["oof", "holdout", "final"]:
+                os.mkdir(os.path.join(self.exp_dump_path, "media", pred_type))
 
     def _run(self) -> None:
         """Start a new experiment entry."""

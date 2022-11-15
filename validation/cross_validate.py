@@ -14,6 +14,7 @@ from sklearn.model_selection import BaseCrossValidator, KFold
 from sklearn.model_selection._split import _BaseKFold
 
 from modeling.build import build_models
+from utils.aug_pred_blender import AugPredBlender
 from utils.evaluating import Evaluator, rmse
 from utils.shuffle_gpkf import ShuffleGroupKFold
 from utils.traits import is_gbdt_instance  # type: ignore
@@ -142,7 +143,7 @@ class MultiSeedCVWrapper(object):
                 feat_imps = pd.concat([feat_imps, feat_imps_fold], ignore_index=True)
 
         if group is not None:
-            oof_pred = SingleLayerBlender(strategy="mean").blend(group, oof_pred)
+            oof_pred = AugPredBlender(strategy="mean").blend(group, oof_pred)
 
         # Report peformance summary
         if self.verbose:
@@ -197,30 +198,6 @@ class MultiSeedCVWrapper(object):
         for eval_range, prf in final_score.items():
             logging.info(f"{eval_range.upper()}: {prf[0]:.5f} ± {prf[1]:.5f}")
         logging.info("-" * 50)
-
-
-class SingleLayerBlender(object):
-    """Blender for blending predicting results obtained from models
-    trained on different window-chunks of data in the same layer.
-
-    With data augmentation, one layer can have more than one prediction.
-
-    Parameters:
-        strategy: blending strategy, the choices are as follows:
-            {"mean", "wt"} -> wt strategy
-    """
-
-    def __init__(self, strategy: str = "mean"):
-        self.strategy = strategy
-
-    def blend(self, layer_ids: pd.Series, oof_pred: np.ndarray) -> np.ndarray:
-        oof_pred_da = pd.DataFrame(oof_pred, columns=["oof_pred"])
-        oof_pred_da["layer"] = layer_ids.values
-
-        if self.strategy == "mean":
-            oof_pred_blended = oof_pred_da.groupby("layer")["oof_pred"].mean().values
-
-        return oof_pred_blended
 
 
 class HardKFold(_BaseKFold):

@@ -20,7 +20,7 @@ class Evaluator(object):
 
     Parameters:
         dataset: name of the dataset, the choices are as folows:
-            {"train1", "train2", "test"}
+            {"train1", "train2", "mix"}
         eval_range: evaluation range
             *Note: If chunk-aware modeling is used, then `eval_range`
                 should be limited

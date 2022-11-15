@@ -7,9 +7,8 @@ This script supports following training and evaluation processes:
 """
 import logging
 import os
-import warnings
 from argparse import Namespace
-from typing import Dict, Iterator, Tuple
+from typing import Any, Dict, Iterator, Tuple
 
 import numpy as np
 import pandas as pd
@@ -21,31 +20,30 @@ from metadata import GP1_N_CHUNKS, GP2_N_CHUNKS
 from utils.evaluating import Evaluator
 from validation.cross_validate import MultiSeedCVWrapper
 
-warnings.simplefilter("ignore")
-
 # Remove local plotting function when uploaded to IMBD remote
 LOCAL = True
 if LOCAL:
     from utils.eda import plot_pred_and_gt
 
 
-def _get_data_chunk(dp: DataProcessor) -> Iterator[Tuple[int, int, pd.DataFrame, np.ndarray]]:
+def _get_data_chunk(dp: DataProcessor) -> Iterator[Tuple[int, int, Any, pd.DataFrame, np.ndarray]]:
     """Retrieve and return data chunk and corresponding identifiers.
 
     Yield:
         gp_id: group identifier, either 1 or 2
         chunk_id: chunk (slice) identifier
+        trafo: QuantileXFormer
         X_chunk: chunked X set
-        y_chunk: chunk y set
+        y_chunk: chunked y set
     """
     for gp_id in [1, 2]:
         n_chunks = GP1_N_CHUNKS[dp.dataset] if gp_id == 1 else GP2_N_CHUNKS[dp.dataset]
         for chunk_id in range(0, n_chunks):
             logging.info(f">>>>>>> Chunk-Aware Modeling Group{gp_id} Chunk{chunk_id} <<<<<<<")
-            dp.run_before_cv(gp_id=gp_id, chunk_id=chunk_id)
+            trafo = dp.run_before_cv(gp_id=gp_id, chunk_id=chunk_id)
             X_chunk, y_chunk = dp.get_X_y()
 
-            yield gp_id, chunk_id, X_chunk, y_chunk
+            yield gp_id, chunk_id, trafo, X_chunk, y_chunk
 
 
 def main(args: Namespace) -> None:
@@ -62,6 +60,7 @@ def main(args: Namespace) -> None:
     assert args.mix_aug is False, "You must set `mix_aug`=False for chunk-aware modeling."
 
     # Configure experiment
+    args.exp_id = f"{args.dataset}-chunk-{args.exp_id}"  # Hard-coded
     experiment = Experiment(args)
 
     with experiment as exp:
@@ -71,8 +70,8 @@ def main(args: Namespace) -> None:
         dp = DataProcessor(dataset=args.dataset, data_type="aug", mix_aug=False, infer=False, **exp.dp_cfg)
 
         # Run chunk-aware CV
-        oof_pred_final: Dict[str, Dict[str, np.ndarray]] = {"gp1": {}, "gp2": {}}
-        for gp_id, chunk_id, X_chunk, y_chunk in _get_data_chunk(dp):
+        oof_pred_gp: Dict[str, Dict[str, np.ndarray]] = {"gp1": {}, "gp2": {}}
+        for gp_id, chunk_id, trafo, X_chunk, y_chunk in _get_data_chunk(dp):
             cv_wrapper = MultiSeedCVWrapper(n_seeds=args.n_seeds, n_folds=args.n_folds, verbose=True, mix_aug=False)
             evaluator = Evaluator(args.dataset, eval_range=[f"gp{gp_id}"])
             oof_preds, *_, models, feat_imps = cv_wrapper.run_cv(
@@ -86,10 +85,11 @@ def main(args: Namespace) -> None:
             )
 
             # Record average oof_pred over folds
-            oof_pred_final[f"gp{gp_id}"][f"pred_with_chunk{chunk_id}"] = np.mean(oof_preds, axis=0)
+            oof_pred_gp[f"gp{gp_id}"][f"pred_with_chunk{chunk_id}"] = np.mean(oof_preds, axis=0)
 
             # Dump CV results
             obj_suffix = f"g{gp_id}_c{chunk_id}"
+            exp.dump_trafo(trafo, tid=obj_suffix)
             exp.dump_ndarr(np.stack(oof_preds), f"oof/{obj_suffix}")
             if len(feat_imps) > 0:
                 exp.dump_df(feat_imps, f"imp/feat_imps_{obj_suffix}", ext="csv")
@@ -106,28 +106,32 @@ def main(args: Namespace) -> None:
             y_base = pd.read_csv("./data/raw/train1/wear.csv")["MaxWear"].values
             plot_pred_and_gt(
                 y_base[:26],
-                oof_pred_final["gp1"],
+                oof_pred_gp["gp1"],
                 figsize=(12, 6),
                 legend=True,
-                dump_path=os.path.join(exp.exp_dump_path, "media", "gp1.jpg"),
+                dump_path=os.path.join(exp.exp_dump_path, "media/oof", "gp1.jpg"),
             )
             plot_pred_and_gt(
                 y_base[-20:],
-                oof_pred_final["gp2"],
+                oof_pred_gp["gp2"],
                 figsize=(12, 6),
                 legend=True,
-                dump_path=os.path.join(exp.exp_dump_path, "media", "gp2.jpg"),
+                dump_path=os.path.join(exp.exp_dump_path, "media/oof", "gp2.jpg"),
             )
 
-            oof_pred_gp1_avg = np.mean(list(oof_pred_final["gp1"].values())[:-1], axis=0)  # Over chunks
-            oof_pred_gp2_avg = np.mean(list(oof_pred_final["gp2"].values())[:-1], axis=0)  # Over chunks
+            oof_pred_gp1_avg = np.mean(
+                list(oof_pred_gp["gp1"].values())[:-1], axis=0
+            )  # Take -1 if last chunk is too short
+            oof_pred_gp2_avg = np.mean(
+                list(oof_pred_gp["gp2"].values())[:-1], axis=0
+            )  # Take -1 if last chunk is too short
             oof_pred_cat = np.concatenate((oof_pred_gp1_avg, oof_pred_gp2_avg))
             plot_pred_and_gt(
                 y_base,
                 [oof_pred_cat],
                 figsize=(12, 6),
                 legend=False,
-                dump_path=os.path.join(exp.exp_dump_path, "media", "final.jpg"),
+                dump_path=os.path.join(exp.exp_dump_path, "media/oof", "cat.jpg"),
             )
 
         logging.info("\n≡≡≡≡≡≡≡ Final Performance Summary ≡≡≡≡≡≡≡")

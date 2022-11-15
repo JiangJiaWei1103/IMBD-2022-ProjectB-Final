@@ -7,7 +7,6 @@ This script supports following training and evaluation processes:
 *Note: To use chunk-aware modeling, please use `train_eval_chunk.py`.
 """
 import os
-import warnings
 from argparse import Namespace
 
 import numpy as np
@@ -18,8 +17,6 @@ from engine.defaults import TrainEvalArgParser
 from experiment.experiment import Experiment
 from utils.evaluating import Evaluator
 from validation.cross_validate import MultiSeedCVWrapper
-
-warnings.simplefilter("ignore")
 
 # Remove local plotting function when uploaded to IMBD remote
 LOCAL = True
@@ -37,6 +34,7 @@ def main(args: Namespace) -> None:
         None
     """
     # Configure experiment
+    args.exp_id = f"{args.dataset}-{args.data_type}-{args.exp_id}"  # Hard-coded
     experiment = Experiment(args)
 
     with experiment as exp:
@@ -46,7 +44,7 @@ def main(args: Namespace) -> None:
         dp = DataProcessor(
             dataset=args.dataset, data_type=args.data_type, mix_aug=args.mix_aug, infer=False, **exp.dp_cfg
         )
-        dp.run_before_cv()
+        trafo = dp.run_before_cv()
         group = dp.get_df()["layer"] if args.mix_aug else None
         X, y = dp.get_X_y()
 
@@ -64,6 +62,7 @@ def main(args: Namespace) -> None:
         )
 
         # Dump CV results
+        exp.dump_trafo(trafo, tid="trafo")
         exp.dump_ndarr(np.stack(oof_preds), "oof")
         exp.dump_df(feat_imps, "imp/feat_imps", ext="csv")
 
@@ -82,14 +81,14 @@ def main(args: Namespace) -> None:
                 oof_preds,
                 figsize=(12, 6),
                 legend=False,
-                dump_path=os.path.join(exp.exp_dump_path, "media", "seed_by_seed.jpg"),
+                dump_path=os.path.join(exp.exp_dump_path, "media/oof", "seed_by_seed.jpg"),
             )
             plot_pred_and_gt(
                 y_base,
                 [np.mean(oof_preds, axis=0)],
                 figsize=(12, 6),
                 legend=False,
-                dump_path=os.path.join(exp.exp_dump_path, "media", "final.jpg"),
+                dump_path=os.path.join(exp.exp_dump_path, "media/oof", "avg.jpg"),
             )
 
 
