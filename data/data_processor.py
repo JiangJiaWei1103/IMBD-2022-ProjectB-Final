@@ -122,15 +122,15 @@ class DataProcessor:
             if self.dataset != "test":
                 y = self._y_base
 
+        pk = PK_AUG if self.data_type == "aug" else PK
+        X = X.drop(pk, axis=1)
         # Run feature selection
         if not self.infer:
-            pk = PK_AUG if self.data_type == "aug" else PK
-            X = X.drop(pk, axis=1)
             fs = FeatureSelector(X.shape, **self.fs_cfg)
             self._X, trafo = fs.run(X, y)
             self._feats_slc = fs.feats_slc_
         else:
-            # No need to drop PK and do feature selection
+            # No need to do feature selection
             assert feats_to_use is not None, "You must provide pre-selected features in inference process."
             # ===
             X = X.replace(SPECIAL_ENTRIES, 0)
