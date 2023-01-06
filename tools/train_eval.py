@@ -75,7 +75,7 @@ def main(args: Namespace) -> None:
                 f.write(f"{feat}\n")
 
         if LOCAL:
-            y_base = pd.read_csv("./data/raw/train1/wear.csv")["MaxWear"].values
+            y_base = pd.read_csv(f"./data/raw/{args.dataset}/wear.csv")["MaxWear"].values
             plot_pred_and_gt(
                 y_base,
                 oof_preds,

@@ -2,6 +2,7 @@
 EDA utilities.
 Author: JiaWei Jiang
 """
+import logging
 from typing import Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
@@ -9,7 +10,6 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import seaborn as sns
-from IPython.display import display
 from matplotlib.axes import Axes
 
 colors = sns.color_palette("Set2")
@@ -43,13 +43,20 @@ def summarize(
     zero_ratio = zero_ratio.to_frame(name="Zero Ratio").T
 
     # Print out summarized information
-    print(f"=====Summary of {file_name}=====")
-    display(df.head(n_rows_to_display))
-    print(f"Shape: {df.shape}")
-    print("NaN ratio:")
-    display(nan_ratio)
-    print("Zero ratio:")
-    display(zero_ratio)
+    #     print(f"=====Summary of {file_name}=====")
+    #     display(df.head(n_rows_to_display))
+    #     print(f"Shape: {df.shape}")
+    #     print("NaN ratio:")
+    #     display(nan_ratio)
+    #     print("Zero ratio:")
+    #     display(zero_ratio)
+    logging.info(f"=====Summary of {file_name}=====")
+    logging.info(df.head(n_rows_to_display))
+    logging.info(f"Shape: {df.shape}")
+    logging.info("NaN ratio:")
+    logging.info(nan_ratio)
+    logging.info("Zero ratio:")
+    logging.info(zero_ratio)
 
 
 def plot_pred_and_gt(

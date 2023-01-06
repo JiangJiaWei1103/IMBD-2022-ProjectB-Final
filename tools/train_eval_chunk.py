@@ -16,7 +16,7 @@ import pandas as pd
 from data.data_processor import DataProcessor
 from engine.defaults import TrainEvalArgParser
 from experiment.experiment import Experiment
-from metadata import GP1_N_CHUNKS, GP2_N_CHUNKS
+from metadata import GP1_LEN, GP1_N_CHUNKS, GP2_N_CHUNKS
 from utils.evaluating import Evaluator
 from validation.cross_validate import MultiSeedCVWrapper
 
@@ -103,16 +103,16 @@ def main(args: Namespace) -> None:
                     f.write(f"{feat}\n")
 
         if LOCAL:
-            y_base = pd.read_csv("./data/raw/train1/wear.csv")["MaxWear"].values
+            y_base = pd.read_csv(f"./data/raw/{args.dataset}/wear.csv")["MaxWear"].values
             plot_pred_and_gt(
-                y_base[:26],
+                y_base[: GP1_LEN[args.dataset]],
                 oof_pred_gp["gp1"],
                 figsize=(12, 6),
                 legend=True,
                 dump_path=os.path.join(exp.exp_dump_path, "media/oof", "gp1.jpg"),
             )
             plot_pred_and_gt(
-                y_base[-20:],
+                y_base[GP1_LEN[args.dataset] :],
                 oof_pred_gp["gp2"],
                 figsize=(12, 6),
                 legend=True,
