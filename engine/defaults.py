@@ -110,52 +110,21 @@ class InferArgParser(BaseArgParser):
     def _build(self) -> None:
         """Build argument parser."""
         self.argparser.add_argument(
-            "--project-name",
-            type=str,
-            default=None,
-            help="name of the project configuring wandb project",
-        )
-        self.argparser.add_argument(
             "--exp-id",
             type=str,
             default=None,
-            help="experiment identifier used to group experiment entries",
+            help="experiment identifier of pre-trained models to use",
         )
         self.argparser.add_argument(
-            "--input-path",
+            "--dataset",
             type=str,
+            choices=["train1", "train2", "mix", "test"],
             default=None,
-            help="path of the input file",
+            help="name of the dataset",
         )
         self.argparser.add_argument(
-            "--model-name",
-            type=str,
+            "--eval-holdout",
+            type=self._str2bool,
             default=None,
-            help="name of the model architecture",
-        )
-        self.argparser.add_argument(
-            "--model-version",
-            type=str,
-            default=None,
-            help="version of the model used to predict",
-        )
-        self.argparser.add_argument(
-            "--model-type",
-            type=str,
-            default=None,
-            choices=["fold", "whole"],
-            help="type of the models used to predict",
-        )
-        self.argparser.add_argument(
-            "--model-ids",
-            type=int,
-            default=None,
-            nargs="*",
-            help="identifiers of models used to predict (fold numbers or " "seed numbers)",
-        )
-        self.argparser.add_argument(
-            "--device",
-            type=str,
-            default="cuda:0",
-            help="device used to run the designated processes",
+            help="run evaluation on holdout or not",
         )

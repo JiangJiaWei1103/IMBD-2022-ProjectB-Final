@@ -12,10 +12,11 @@ SPIKE_FEAT = ["b", "c", "d"]  # Spike
 # Target
 TARGET = "MaxWear"
 TARGET2 = "MaxWearDiff"  # (Deprecated)
+
 # Processing Layers
-N_PROC_LAYERS = {"train1": 46, "train2": 24, "test": 25}  # Number of processing layers
-GP1_LEN = {"train1": 26, "train2": 0, "test": 0}  # #Layers in group1
-GP2_LEN = {"train1": 20, "train2": 0, "test": 0}  # #Layers in group2
+N_PROC_LAYERS = {"train1": 46, "train2": 24, "mix": None, "test": 25}  # Number of processing layers
+GP1_LEN = {"train1": 26, "train2": 24, "mix": None, "test": 4}  # #Layers in group1
+GP2_LEN = {"train1": 20, "train2": 0, "mix": None, "test": 21}  # #Layers in group2
 # Number of Chunks per Layer
-GP1_N_CHUNKS = {"train1": 11, "train2": 0, "test": 0}
-GP2_N_CHUNKS = {"train1": 8, "train2": 0, "test": 0}
+GP1_N_CHUNKS = {"train1": 11, "train2": 10, "mix": None, "test": 10}
+GP2_N_CHUNKS = {"train1": 8, "train2": 0, "mix": None, "test": 10}

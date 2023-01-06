@@ -55,7 +55,7 @@ class DataProcessor:
 
     def _prepare_y(self) -> Optional[np.ndarray]:
         """Prepare y data."""
-        if not self.infer:
+        if self.dataset != "test":
             y = pd.read_csv(os.path.join(RAW_DATA_PATH, f"{self.dataset}/wear.csv"))
             if self.mix_aug:
                 y = self._df["layer"].map(y.set_index("Index")[TARGET]).values
@@ -78,12 +78,18 @@ class DataProcessor:
         self.scale_cfg = self._dp_cfg["scale"]
 
     def run_before_cv(
-        self, feats_to_use: Optional[List[str]] = None, gp_id: Optional[int] = None, chunk_id: Optional[int] = None
-    ) -> None:
+        self,
+        feats_to_use: Optional[List[str]] = None,
+        trafo: Optional[Any] = None,
+        gp_id: Optional[int] = None,
+        chunk_id: Optional[int] = None,
+    ) -> Optional[Any]:
         """Clean and process data before cross validation process.
 
         Parameters:
             feats_to_use: pre-selected features
+                *Note: It's used when `self.infer` is True
+            trafo: transfomer
                 *Note: It's used when `self.infer` is True
             gp_id: group identifier, either 1 or 2
                 *Note: It's used only in chunk-aware modeling
@@ -91,7 +97,7 @@ class DataProcessor:
                 *Note: It's used only in chunk-aware modeling
 
         Return:
-            None
+            trafo: QuantileXFormer
         """
         logging.info("Run data cleaning and processing before data splitting...")
 
@@ -109,27 +115,39 @@ class DataProcessor:
                 # Group2 data is retrieved
                 gp_mask = self._df["layer"] > gp_sep
             X = self._df[gp_mask & (self._df["slice"] == chunk_id)]
-            if not self.infer:
+            if self.dataset != "test":
                 y = self._y_base[:gp_sep] if gp_id == 1 else self._y_base[gp_sep:]
         else:
             X = self._df
-            if not self.infer:
+            if self.dataset != "test":
                 y = self._y_base
 
+        pk = PK_AUG if self.data_type == "aug" else PK
+        X = X.drop(pk, axis=1)
         # Run feature selection
         if not self.infer:
-            pk = PK_AUG if self.data_type == "aug" else PK
-            X = X.drop(pk, axis=1)
             fs = FeatureSelector(X.shape, **self.fs_cfg)
-            self._X = fs.run(X, y)
+            self._X, trafo = fs.run(X, y)
             self._feats_slc = fs.feats_slc_
-            self._y = y
         else:
-            # No need to drop PK
+            # No need to do feature selection
             assert feats_to_use is not None, "You must provide pre-selected features in inference process."
+            # ===
+            X = X.replace(SPECIAL_ENTRIES, 0)
+            logging.info(f"Use {trafo} to transform data...")
+            X = pd.DataFrame(trafo.transform(X), columns=X.columns)
+            # ===
             self._X = X[feats_to_use]
+            trafo = None  # Reset
+
+        if self.dataset != "test":
+            self._y = y
+            logging.info(f"X shape: {self._X.shape}, y_shape: {self._y.shape}\n")
+        else:
             self._y = None
-        logging.info(f"X shape: {self._X.shape}, y_shape: {self._y.shape}\n")
+            logging.info(f"X shape: {self._X.shape}, y isn't provided\n")
+
+        return trafo
 
     def run_after_splitting(
         self,

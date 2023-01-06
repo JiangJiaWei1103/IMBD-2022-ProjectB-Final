@@ -1,6 +1,6 @@
 """Feature selector."""
 import logging
-from typing import List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -39,7 +39,7 @@ class FeatureSelector(object):
         self.kbest_score_fn = kbest_score_fn
         self.kbest_k = kbest_k
 
-    def run(self, X: pd.DataFrame, y: Union[pd.Series, np.ndarray]) -> pd.DataFrame:
+    def run(self, X: pd.DataFrame, y: Union[pd.Series, np.ndarray]) -> Tuple[pd.DataFrame, Any]:
         """Run feature selection pipeline."""
         self.feats_orig_ = X.columns
 
@@ -60,7 +60,7 @@ class FeatureSelector(object):
         X_slc = X[self.feats_orig_[self.slc_mask_]]
         self.feats_slc_ = X_slc.columns.to_list()
 
-        return X_slc
+        return X_slc, scl
 
     def _drop_zero_cols(self, X: pd.DataFrame) -> None:
         """Drop columns with all entries to be zeros."""
